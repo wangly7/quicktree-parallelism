@@ -3,13 +3,15 @@
 /**
  * Construct 1D distance matrix array from PHYLIP format distance matrix file
  */
-DistanceMatrix readPhylipDistanceMatrix(std::istream& input) {
+DistanceMatrix readPhylipDistanceMatrix(std::istream& input, std::vector<std::string>& identifiers) {
     uint32_t size = 0;
     input >> size;
     DistanceMatrix mat(size);
 
     if (!size || size <= 0) fprintf(stderr, "ERROR: Invalid PHYLIP header");
 
+    identifiers.clear();
+    identifiers.reserve(size);
     std::string line;
     // start from third line
     std::getline(input, line);
@@ -21,6 +23,7 @@ DistanceMatrix readPhylipDistanceMatrix(std::istream& input) {
         std::istringstream value(line);
         // first column: specie's name
         value >> identifier;
+        identifiers.push_back(identifier);
         for (uint32_t j = 0; j < i; j++) {
             double distance;
             if (!(value >> distance)) {
@@ -33,6 +36,19 @@ DistanceMatrix readPhylipDistanceMatrix(std::istream& input) {
             mat.set(i, j, distance);
         }
     }
-
+    // printDistanceMatrix(&mat, size, size);
     return mat;
+}
+
+
+/**
+ * Prints the given distance matrix.
+ */
+void printDistanceMatrix(const DistanceMatrix* mat, uint32_t row, uint32_t column) {
+  for(row=0; row < mat->size; row++) {
+    fprintf(stdout, "%5d", row);
+    for(column=0; column < row; column++)
+	    fprintf(stdout, "%10.5f", mat->get(row, column));
+        fprintf(stdout, "\n");
+  }
 }

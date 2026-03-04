@@ -1,13 +1,14 @@
 #include <boost/program_options.hpp>
 #include <fstream>
 #include "distancemat.hpp"
+#include "timer.hpp"
 
 
 namespace po = boost::program_options;
 
 
 int main(int argc, char** argv) {
-
+    Timer timer;
     std::string matrixFilename;
     uint32_t maxTaxa;
 
@@ -35,6 +36,10 @@ int main(int argc, char** argv) {
         fprintf(stderr, "ERROR: Cannot open file: %s\n", matrixFilename.c_str());
     }
     
-    DistanceMatrix mat = readPhylipDistanceMatrix(fp);
-
+    std::vector<std::string> identifiers;
+    
+    timer.Start();
+    fprintf(stdout, "Reading distance matrix from file.\n");
+    DistanceMatrix mat = readPhylipDistanceMatrix(fp, identifiers);
+    fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
 }
