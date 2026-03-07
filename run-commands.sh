@@ -13,5 +13,5 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${PWD}/tbb_cmake_build/tbb_cmake_build
 
 
 
-./quicktree -m ../data/matrix.phy
+./quicktree -m ../data/matrix.phy -o tree.nwk
 

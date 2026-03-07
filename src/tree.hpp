@@ -1,22 +1,28 @@
-#include <string>
-struct Node {
-  struct Node *left;
-  struct Node *right;
-  struct Node *parent;
-  double distance;
-  unsigned int nodenumber;
-  unsigned int *child_ids;
+#include <cstdint>
+#include <iostream>
 
-  Node(Node *left, Node *right, Node *parent): left(left), right(right), parent(parent) {}
+
+struct TNode {
+  TNode* left;
+  TNode* right;
+  TNode* parent;  
+  
+  double distance = 0.0;
+  uint32_t nodenumber;
+  std::string identifier;
+
+  TNode()
+    : left(nullptr), right(nullptr), parent(nullptr),
+      distance(0.0), nodenumber(0), identifier("") {}
 };
 
 struct Tree {
-  struct Tnode *child[3];
-  unsigned int numnodes;
+  TNode *child[3];
+  uint32_t numnodes;
+
+  Tree(): child{nullptr, nullptr, nullptr}, numnodes(0) {}
 };
 
-struct Cluster {
-  unsigned int numclusters;
-  struct Tnode *node;
-  struct DistanceMatrix *matrix;
-};
+
+void write_newhampshire_Tnode(FILE* out, TNode* node);
+void write_newhampshire_Tree(FILE* out, Tree* tree);

@@ -8,7 +8,10 @@ DistanceMatrix readPhylipDistanceMatrix(std::istream& input, std::vector<std::st
     input >> size;
     DistanceMatrix mat(size);
 
-    if (!size || size <= 0) fprintf(stderr, "ERROR: Invalid PHYLIP header");
+    if (!size || size <= 0) {
+        fprintf(stderr, "ERROR: Invalid PHYLIP header");
+        exit(1);
+    }
 
     identifiers.clear();
     identifiers.reserve(size);
@@ -17,7 +20,10 @@ DistanceMatrix readPhylipDistanceMatrix(std::istream& input, std::vector<std::st
     std::getline(input, line);
     
     for(uint32_t i = 0 ; i < size; i++) {
-        if (!std::getline(input, line)) fprintf(stderr, "ERROR: Unexpected EOF.");
+        if (!std::getline(input, line)) {
+            fprintf(stderr, "ERROR: Unexpected EOF.");
+            exit(1);
+        };
 
         std::string identifier;
         std::istringstream value(line);
@@ -30,7 +36,10 @@ DistanceMatrix readPhylipDistanceMatrix(std::istream& input, std::vector<std::st
                 // PHYLIP allow matrix format like:
                 // T1 0.2 0.3 0.4
                 //    0.5
-                if(!(input >> distance)) fprintf(stderr, "ERROR: Missing distance at position (%d, %d).\n", i, j);
+                if(!(input >> distance)) {
+                    fprintf(stderr, "ERROR: Missing distance at position (%d, %d).\n", i, j);
+                    exit(1);
+                }
                 std::getline(input, line);
             }
             mat.set(i, j, distance);
