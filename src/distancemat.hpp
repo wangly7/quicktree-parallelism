@@ -1,3 +1,6 @@
+#pragma once
+
+
 #include <vector>
 #include <cstdint>
 #include <iostream>
@@ -27,3 +30,5 @@ struct DistanceMatrix {
 
 void printDistanceMatrix(const DistanceMatrix* distanceMat, uint32_t row, uint32_t column);
 DistanceMatrix readPhylipDistanceMatrix(std::istream& input, std::vector<std::string>& identifiers);
+
+
