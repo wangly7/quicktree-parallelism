@@ -4,11 +4,12 @@
 #include <limits>
 #include <tuple>
 #define BLOCKSIZE 256
+#define NUMBLOCKS 8
 
 /**
  * Building phylogenetic tree on GPU
  */
- __global__ void buildTreeOnCPU(uint32_t d_size, double *mat, uint32_t *d_nodes, double* u_i){
+ __global__ void buildTreeOnCPU(uint32_t d_size, double *mat, uint32_t *d_nodes, double* u_i, uint32_t* d_min_ij, double* d_min_dst){
     // Kernel Configuration
     int bx = blockIdx.x;
     int tx = threadIdx.x;
@@ -17,15 +18,12 @@
 
     uint32_t u_len = d_size*(d_size-1)/2;
     
-    __shared__ uint32_t min_i;
-    __shared__ uint32_t min_j;
-    __shared__ double min_dst;
     struct red_dst {
         uint32_t index_i;
         uint32_t index_j;
         double dst;
     };
-    __shared__ rdc_dst reduction[BLOCKSIZE]; //shared memory limit per block
+    __shared__ rdc_dst reduction[BLOCKSIZE]; 
 
     // one grid for one distance matrix
     // 1. for each leaf compute u_i = summation from j!= i to N, (d_ij) / (N-2)
@@ -41,19 +39,21 @@
     }
 
     // initialize reduction
-    for (uint32_t i=bs*bx+tx; i<BLOCKSIZE; i+=bs*gs) {
+    uint32_t i=tx; 
+    if(i<BLOCKSIZE; i++) {
         reduction[i].index_i = -1;
         reduction[i].index_j = -1;
         reduction[i].dst = DBL_MAX;
     }
 
     // 2. find leaf pair i and j for which d_ij - u_i - u_j is minimum 
-    for (uint32_t i=bs*bx+tx; i<N; i+=bs*gs){
+    uint32_t i = tx;
+    if (i < N) {
         for (uint32_t j=0; j<i; j++) {
             uint32_t index = i*(i-1)/2+j;
-            if (d_nodes[index] == 0) continue; // skip inactive nodes
+            // if (d_nodes[index] == 0) continue; // skip inactive nodes
             double leaf = mat[index] - u_i[i] - u_j[j];
-            if (leaf < reduction[i].dst) { // Issue: Out of bounds bc N > BLOCKSIZE
+            if (leaf < reduction[i].dst) { 
                 reduction[i].dst = leaf;
                 reduction[i].index_i = i;
                 reduction[i].index_j = j;
@@ -61,7 +61,7 @@
         }
     }
 
-    // parallel reduction
+    // parallel reduction within a block
     for (int s=BLOCKSIZE/2; s>0; s>>=1) { 
         if (tx < s) {
             if(reduction[tx].dst > reduction[tx+s].dst) reduction[tx] = reduction[tx+s];
@@ -70,11 +70,19 @@
     }
 
     if (tx == 0) {
-        min_dst = reduction[0].dst;
-        min_i = reduction[0].index_i;
-        min_j = reduction[0].index_j;
+        d_min_ij[bx][0] = reduction[tx].index_i;
+        d_min_ij[bx][1] = reduction[tx].index_j;
+        d_min_dst[bx] = reduction[tx].dst;
     }
     __syncthreads();
+
+    // parallel reduction across block
+    for (int s=BLOCKSIZE/2; s>0; s>>=1) { 
+        if (tx < s) {
+            if(reduction[tx].dst > reduction[tx+s].dst) reduction[tx] = reduction[tx+s];
+        }
+        __syncthreads();
+    } 
 
     // 3. Join i and j to form a common node (ij) such that
     // the distance of i from the (ij), d_i(ij) = 0.5 * (d_ij + (u_i-u_j)) and 
@@ -108,9 +116,6 @@
         d_nodes[bk_index] = 0; // set tips b to inactive
     }
 
-    // Store in d_nodes: index, branch length
-    // Should have global min_i and min_j for merging
-
  }
 
 
@@ -123,7 +128,7 @@
  * 4. Retrieves results and reconstructs trees
  */
  void GpuTree::build() {
-    int numBlocks = 512;  // i.e. number of thread blocks on the GPU
+    int numBlocks = NUMBLOCKS;  // i.e. number of thread blocks on the GPU
     int blockSize = BLOCKSIZE; // i.e. number of GPU threads per thread block
 
     // 1. Allocate memory on Device
@@ -133,7 +138,7 @@
     transferMat2Device();
 
     // 3. Perform building tree on GPU
-    buildTreeOnCPU<<<numBlocks, blockSize>>>(d_size, mat, d_nodes, u_i);
+    buildTreeOnCPU<<<numBlocks, blockSize>>>(d_size, mat, d_nodes, u_i, d_min);
     
 
     // 4. Transfer the final merged nodes from device
@@ -183,6 +188,20 @@ void GpuTree::allocateMem() {
     
     // 5. allocate memory for u_i
     err = cudaMalloc(&u_i, h_size * sizeof(double));
+    if (err != cudaSuccess) {
+        fprintf(stderr, "GPU_ERROR: %s (%s)\n", cudaGetErrorString(err), cudaGetErrorName(err));
+        exit(1);
+    }
+
+    // 6. allocate struct for min_i, min_j
+    err = cudaMalloc(&d_min_ij, 2 * sizeof(uint32_t));
+    if (err != cudaSuccess) {
+        fprintf(stderr, "GPU_ERROR: %s (%s)\n", cudaGetErrorString(err), cudaGetErrorName(err));
+        exit(1);
+    }
+
+    // 7. allocate struct for min_dst
+    err = cudaMalloc(&d_min_dst, sizeof(double));
     if (err != cudaSuccess) {
         fprintf(stderr, "GPU_ERROR: %s (%s)\n", cudaGetErrorString(err), cudaGetErrorName(err));
         exit(1);
