@@ -279,8 +279,10 @@ __global__ void updateDistanceMatrix(
         
         active_count--;
     }
-    
-    
+
+    // instantiate tree
+    theTree = new Tree();
+    handleLeftovers(); 
     
  }
 

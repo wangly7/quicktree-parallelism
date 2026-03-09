@@ -43,6 +43,7 @@ add_executable(quicktree
     src/buildtree.cu
     src/gpuProperty.cu
     src/distancemat.cpp
+    src/tree.cpp
 )
 
 

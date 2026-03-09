@@ -4,6 +4,7 @@
 #include "distancemat.hpp"
 #include "buildtree.cuh"
 #include "timer.hpp"
+#include "tree.hpp"
 
 namespace po = boost::program_options;
 
@@ -64,8 +65,10 @@ int main(int argc, char** argv) {
     // launch tree building process
     timer.Start();
     TreeBuilder.build();
-    timer.Stop();
     TreeBuilder.clearAndReset();
+
+    // write output tree
+    write_newhampshire_Tree(out, TreeBuilder.theTree);
 
     fprintf(stdout, "\nProgram completed in %ld ms\n\n", timer.Stop());
     return 0;

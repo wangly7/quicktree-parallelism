@@ -1,6 +1,8 @@
 #include <cstdint>
 #include <iostream>
 
+#ifndef TREE_HPP
+#define TREE_HPP
 
 struct TNode {
   TNode* left;
@@ -26,3 +28,5 @@ struct Tree {
 
 void write_newhampshire_Tnode(FILE* out, TNode* node);
 void write_newhampshire_Tree(FILE* out, Tree* tree);
+
+#endif

@@ -13,7 +13,7 @@ std::tuple<uint32_t, uint32_t, double, double> compute_min_ij (const DistanceMat
     uint32_t min_i = std::numeric_limits<uint32_t>::min();
     uint32_t min_j = std::numeric_limits<uint32_t>::min();
 
-    if (N < 3) return std::make_tuple(min_i, min_j, DBL_MIN, DBL_MIN);;
+    if (N < 3) return std::make_tuple(min_i, min_j, DBL_MIN, DBL_MIN);
 
     // 1. for each leaf compute u_i = summation from j!= i to N, (d_ij) / (N-2)
     for (uint32_t i=0; i<N; i++) {
