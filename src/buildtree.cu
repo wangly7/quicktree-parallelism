@@ -275,8 +275,6 @@ __global__ void updateDistanceMatrix(
 
         cudaDeviceSynchronize();
         MergeInfo info = transferNode2Host();
-        fprintf(stdout, "merged internalnode to node-%u distance = %f\n", info.min_ij[0], info.branch_len[0]);
-        fprintf(stdout, "merged internalnode to node-%u distance = %f\n", info.min_ij[1], info.branch_len[1]);
         buildInternalNode(info);
         
         active_count--;
