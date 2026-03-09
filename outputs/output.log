@@ -1,0 +1,44 @@
+Deleted build repository
+time="2026-03-09T15:13:50-07:00" level=warning msg="skipping device /dev/char/10:200 for systemd: stat /sys/dev/char/10:200: no such file or directory"
+/home/lchandra/quicktree-parallelism
+-- The CXX compiler identification is GNU 11.4.0
+-- The CUDA compiler identification is NVIDIA 12.3.103
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting CUDA compiler ABI info
+-- Detecting CUDA compiler ABI info - done
+-- Check for working CUDA compiler: /usr/local/cuda/bin/nvcc - skipped
+-- Detecting CUDA compile features
+-- Detecting CUDA compile features - done
+-- CUDA-capable GPU found. GPU architecture: 80
+-- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.74.0/BoostConfig.cmake (found version "1.74.0") found components: program_options 
+-- Found ZLIB: /usr/lib/x86_64-linux-gnu/libz.so (found version "1.2.11") 
+-- Found TBB: /usr/lib/x86_64-linux-gnu/cmake/TBB (found version "2021.5.0")
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/lchandra/quicktree-parallelism/build
+[ 50%] Building CXX object CMakeFiles/quicktree.dir/src/main.cpp.o
+[ 66%] Building CUDA object CMakeFiles/quicktree.dir/src/gpuProperty.cu.o
+[ 66%] Building CUDA object CMakeFiles/quicktree.dir/src/buildtree.cu.o
+[ 66%] Building CXX object CMakeFiles/quicktree.dir/src/distancemat.cpp.o
+[ 83%] Building CXX object CMakeFiles/quicktree.dir/src/tree.cpp.o
+[100%] Linking CXX executable quicktree
+[100%] Built target quicktree
+Printing GPU device properties.
+Device Number: 0
+  Device name: NVIDIA A30 MIG 2g.12gb
+  Device memory: 12549357568
+  Memory Clock Rate (KHz): 1215000
+  Memory Bus Width (bits): 1536
+  Peak Memory Bandwidth (GB/s): 466.560000
+Reading distance matrix from file.
+Completed in 8387 msec 
+
+
+Program completed in 214590 ms
+
+222.66user 0.56system 3:43.16elapsed 100%CPU (0avgtext+0avgdata 493436maxresident)k
+0inputs+472outputs (0major+49994minor)pagefaults 0swaps

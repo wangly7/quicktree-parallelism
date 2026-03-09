@@ -1,0 +1,2 @@
+RF	normalisedRF	leaves	foundBranches	missedBranches	notFoundBranches	RFL
+26	0.0013496677740863787	10000	9250	9	17	0.006390000000005369
