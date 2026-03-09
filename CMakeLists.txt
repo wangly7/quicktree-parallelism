@@ -30,12 +30,19 @@ if(TBB_FOUND)
     message(STATUS "Found TBB: ${TBB_DIR} (found version \"${TBB_VERSION}\")")
 endif()
 
-add_executable (quicktree
+# add_executable (quicktree
+#     src/main.cpp
+#     src/distancemat.cpp
+#     src/buildtree.cpp
+#     src/tree.cpp
+#     src/matcal.cpp
+# )
+
+add_executable(quicktree
     src/main.cpp
+    src/buildtree.cu
+    src/gpuProperty.cu
     src/distancemat.cpp
-    src/buildtree.cpp
-    src/tree.cpp
-    src/matcal.cpp
 )
 
 

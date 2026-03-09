@@ -1,8 +1,9 @@
 #include <boost/program_options.hpp>
 #include <fstream>
-#include <vector>
+#include <cstdio>
+#include "matcal.hpp"
 #include "distancemat.hpp"
-#include "buildtree.cuh"
+#include "buildtree.hpp"
 #include "timer.hpp"
 
 namespace po = boost::program_options;
@@ -38,36 +39,42 @@ int main(int argc, char** argv) {
     if (!fp){
         fprintf(stderr, "ERROR: Cannot open file: %s\n", matrixFilename.c_str());
     }
-
-    FILE* out = stdout;
-    if (!outputFilename.empty()) {
-        out = fopen(outputFilename.c_str(), "w");
-        if (!out) {
-            fprintf(stderr, "ERROR: cannot open file: %s\n", outputFilename.c_str());
-            exit(1);
-        }
-    }
-
-    // Print GPU information
-    fprintf(stdout, "Printing GPU device properties.\n");
-    printGpuProperties();
     
-    // read distance matrix
+
+    // DistanceMatrix mat = readPhylipDistanceMatrix(fp); 
+    // DistanceMatrix computed_tree = compute_tree(mat);
+    // printDistanceMatrix(mat);
+
     std::vector<std::string> identifiers;
+    
     timer.Start();
     fprintf(stdout, "Reading distance matrix from file.\n");
     DistanceMatrix mat = readPhylipDistanceMatrix(fp, identifiers);
     fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
 
-    GpuTree TreeBuilder(mat.data, identifiers, mat.size);
+    FILE* out = stdout;
 
-    // launch tree building process
-    timer.Start();
-    TreeBuilder.build();
-    timer.Stop();
-    TreeBuilder.clearAndReset();
+    if (!outputFilename.empty()) {
+        out = fopen(outputFilename.c_str(), "w");
+        if (!out) {
+            fprintf(stderr, "ERROR: cant open file: %s\n", outputFilename.c_str());
+            exit(1);
+        }
+    }
 
-    fprintf(stdout, "\nProgram completed in %ld ms\n\n", timer.Stop());
+    Tree* myTree = neighbour_joining_buildtree(&mat, identifiers);
+    write_newhampshire_Tree(out, myTree);
+
+    // test distance matrix update
+    uint32_t row=0;
+    uint32_t col=0;
+
+    fprintf(stdout, "Before update matrix: \n");
+    printDistanceMatrix(&mat, row, col);
+
+    DistanceMatrix new_mat = update_matrix(&mat);
+    fprintf(stdout, "Afte update matrix: \n");
+    printDistanceMatrix(&new_mat, row, col);
     return 0;
 
 }
