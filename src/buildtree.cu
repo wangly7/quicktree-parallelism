@@ -275,6 +275,8 @@ __global__ void updateDistanceMatrix(
 
         cudaDeviceSynchronize();
         MergeInfo info = transferNode2Host();
+        fprintf(stdout, "merged internalnode to node-%u distance = %f\n", info.min_ij[0], info.branch_len[0]);
+        fprintf(stdout, "merged internalnode to node-%u distance = %f\n", info.min_ij[1], info.branch_len[1]);
         buildInternalNode(info);
         
         active_count--;
@@ -326,9 +328,9 @@ void GpuTree::handleLeftovers() {
         };
     }
 
-    uint32_t index_1_0 = leftovers[1] * (leftovers[1] - 1) + leftovers[0];
-    uint32_t index_2_0 = leftovers[2] * (leftovers[2] - 1) + leftovers[0];
-    uint32_t index_2_1 = leftovers[2] * (leftovers[2] - 1) + leftovers[1];
+    uint32_t index_1_0 = leftovers[1] * (leftovers[1] - 1) / 2 + leftovers[0];
+    uint32_t index_2_0 = leftovers[2] * (leftovers[2] - 1) / 2 + leftovers[0];
+    uint32_t index_2_1 = leftovers[2] * (leftovers[2] - 1) / 2 + leftovers[1];
     double dist_i = theTree->child[0]->distance = (
         data[index_1_0]+ data[index_2_0] - data[index_2_1]
     ) * 0.5;
