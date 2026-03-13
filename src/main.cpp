@@ -58,19 +58,19 @@ int main(int argc, char** argv) {
     timer.Start();
     fprintf(stdout, "Reading distance matrix from file.\n");
     DistanceMatrix mat = readPhylipDistanceMatrix(fp, identifiers);
-    fprintf(stdout, "Completed in %ld msec \n\n", timer.Stop());
+    fprintf(stdout, "Reading distance matrix in %ld msec \n\n", timer.Stop());
 
     GpuTree TreeBuilder(mat.data, identifiers, mat.size);
 
-    // launch tree building process
     timer.Start();
+    // launch tree building process
     TreeBuilder.build();
     TreeBuilder.clearAndReset();
 
     // write output tree
     write_newhampshire_Tree(out, TreeBuilder.theTree);
 
-    fprintf(stdout, "\nProgram completed in %ld ms\n\n", timer.Stop());
+    fprintf(stdout, "\nBuilding Tree in %ld ms\n\n", timer.Stop());
     return 0;
 
 }

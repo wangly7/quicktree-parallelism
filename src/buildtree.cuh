@@ -35,6 +35,8 @@ struct GpuTree {
     double *d_merged_dst; // [0] distance from i to ij
                          // [1] distance from j to ij
 
+    double* partial_sum;
+
     uint32_t *active;  // active nodes that need to merge
 
      GpuTree(std::vector<double>& d, std::vector<std::string>& ids, uint32_t n): 
@@ -53,6 +55,7 @@ struct GpuTree {
     void build();
     void initNodesOnCPU();
     MergeInfo transferNode2Host();
+    void transferMat2Host();
     void buildInternalNode(const MergeInfo& info);
     void handleLeftovers();
     void clearAndReset();

@@ -191,8 +191,13 @@ __global__ void updateDistanceMatrix(
     uint32_t N,
     double* mat,
     const uint32_t* active,
-    const uint32_t* d_min_ij
+    const uint32_t active_count,
+    const uint32_t* d_min_ij,
+    double* u_i,
+    double* partial_sum
 ){
+    __shared__ double new_sum[BLOCKSIZE];
+
     uint32_t bx = blockIdx.x;
     uint32_t tx = threadIdx.x;
     uint32_t bs = blockDim.x;
@@ -205,6 +210,8 @@ __global__ void updateDistanceMatrix(
     uint32_t b = (min_i > min_j) ? min_j : min_i;
     uint32_t ij_index = a * (a - 1) / 2 + b;
     double dij = mat[ij_index];
+
+    double local_sum = 0;
 
     for (uint32_t k = bs*bx+tx; k < N; k += bs*gs) {
         if (active[k] == 0) continue;
@@ -224,6 +231,57 @@ __global__ void updateDistanceMatrix(
         double new_d = 0.5 * (dik + djk - dij);
         if (new_d < 0.0) new_d = 0.0;
         mat[ik_index] = new_d;
+        local_sum += new_d;
+        
+        u_i[k] = ((u_i[k] * (active_count - 2.0)) - dik - djk + new_d) / (active_count - 3.0);
+    }
+
+    new_sum[tx] = local_sum;
+    __syncthreads();
+
+    for (uint32_t offset = bs / 2; offset > 0; offset >>= 1) {
+        if (tx < offset) {
+            new_sum[tx] += new_sum[tx + offset];
+        }
+        __syncthreads();
+    }
+    
+    if (tx == 0) {
+        partial_sum[bx] = new_sum[0];
+    }
+}
+
+ __global__ void updateU(
+     double* u_i,
+     double* partial_sum,
+     const uint32_t* d_min_ij,
+     uint32_t active_count
+) {
+    uint32_t tx = threadIdx.x;
+    uint32_t bs = blockDim.x;
+
+    __shared__ double thread_sum[BLOCKSIZE];
+    uint32_t min_i = d_min_ij[0];
+
+    // initialize
+    thread_sum[tx] = 0;
+    __syncthreads();
+    
+    for (uint32_t i = tx; i < NUMBLOCKS; i += bs) {
+        thread_sum[tx] += partial_sum[i];
+    }
+    __syncthreads();
+
+    // parallel reduction to calculate sum
+    for (uint32_t offset = bs / 2; offset > 0; offset >>= 1) {
+        if (tx < offset) {
+            thread_sum[tx] += thread_sum[tx + offset];
+        }
+        __syncthreads();
+    }
+    
+    if (tx == 0) {
+        u_i[min_i] = thread_sum[0] / (active_count - 3.0);
     }
 }
 
@@ -254,8 +312,10 @@ __global__ void updateDistanceMatrix(
     // 5. Main NJ loop
     uint32_t active_count = N;
 
+    // 6. compute u_i array only once
+    computeU<<<numBlocks, blockSize>>>(N, mat, active, active_count, u_i);
+
     while (active_count > 3) {
-        computeU<<<numBlocks, blockSize>>>(N, mat, active, active_count, u_i);
 
         findBlockMin<<<numBlocks, blockSize>>>(
             N, mat, u_i, active, d_block_min_ij, d_block_min_dst
@@ -270,8 +330,10 @@ __global__ void updateDistanceMatrix(
         );
 
         updateDistanceMatrix<<<numBlocks, blockSize>>>(
-            N, mat, active, d_min_ij
+            N, mat, active, active_count, d_min_ij, u_i, partial_sum
         );
+
+        updateU<<<1, blockSize>>>(u_i, partial_sum, d_min_ij, active_count);
 
         cudaDeviceSynchronize();
         MergeInfo info = transferNode2Host();
@@ -280,11 +342,16 @@ __global__ void updateDistanceMatrix(
         active_count--;
     }
 
+    transferMat2Host();
     // instantiate tree
     theTree = new Tree();
-    handleLeftovers(); 
-    
+    handleLeftovers();   
  }
+
+ /**
+ * Use 1 block to update u_i
+ */
+
 
 void GpuTree::initNodesOnCPU () {
     nodes.resize(N);
@@ -446,7 +513,15 @@ void GpuTree::allocateMem() {
         exit(1);
     }
 
+    // 7. allocate memory for minimum values in a block
     err = cudaMalloc(&d_block_min_dst, NUMBLOCKS * sizeof(double));
+    if (err != cudaSuccess) {
+        fprintf(stderr, "GPU_ERROR: %s (%s)\n", cudaGetErrorString(err), cudaGetErrorName(err));
+        exit(1);
+    }
+
+    // 8. allocate memory to partial sum value in a block
+    err = cudaMalloc(&partial_sum, NUMBLOCKS * sizeof(double));
     if (err != cudaSuccess) {
         fprintf(stderr, "GPU_ERROR: %s (%s)\n", cudaGetErrorString(err), cudaGetErrorName(err));
         exit(1);
@@ -484,7 +559,19 @@ MergeInfo GpuTree::transferNode2Host() {
         fprintf(stderr, "GPU_ERROR: %s (%s)\n", cudaGetErrorString(err), cudaGetErrorName(err));
         exit(1);
     }
+
     return info;
+}
+
+
+void GpuTree::transferMat2Host() {
+    cudaError_t err;
+
+    err = cudaMemcpy(data.data(), mat, (N*(N-1)/2) * sizeof(double), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "GPU_ERROR: %s (%s)\n", cudaGetErrorString(err), cudaGetErrorName(err));
+        exit(1);
+    }
 }
 
 void GpuTree::clearAndReset() {
@@ -495,4 +582,5 @@ void GpuTree::clearAndReset() {
     cudaFree(d_merged_dst);
     cudaFree(d_block_min_ij);
     cudaFree(d_block_min_dst);
+    cudaFree(partial_sum);
 }
