@@ -13,5 +13,6 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${PWD}/tbb_cmake_build/tbb_cmake_build
 
 
 
-./quicktree -m ../data/matrix.phy -o tree.nwk
+nsys profile --stats=true ./quicktree -m ../data/matrix_10k.phy -o tree.nwk
+# ./quicktree -m ../data/matrix.phy -o tree.nwk
 
