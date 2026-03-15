@@ -25,18 +25,6 @@ endif()
 
 find_package(Boost COMPONENTS program_options REQUIRED)
 find_package(ZLIB REQUIRED)
-find_package(TBB REQUIRED CONFIG)
-if(TBB_FOUND)
-    message(STATUS "Found TBB: ${TBB_DIR} (found version \"${TBB_VERSION}\")")
-endif()
-
-# add_executable (quicktree
-#     src/main.cpp
-#     src/distancemat.cpp
-#     src/buildtree.cpp
-#     src/tree.cpp
-#     src/matcal.cpp
-# )
 
 add_executable(quicktree
     src/main.cpp
@@ -47,5 +35,5 @@ add_executable(quicktree
 )
 
 
-target_link_libraries(quicktree PRIVATE ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} TBB::tbb)
+target_link_libraries(quicktree PRIVATE ${Boost_LIBRARIES} ${ZLIB_LIBRARIES})
 
